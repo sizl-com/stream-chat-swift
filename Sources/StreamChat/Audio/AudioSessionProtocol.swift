@@ -4,7 +4,6 @@
 
 import AVFoundation
 
-#if !os(macOS) || targetEnvironment(macCatalyst)
 /// A simple protocol that abstracts the usage of AVAudioSession
 protocol AudioSessionProtocol {
     var category: AVAudioSession.Category { get }
@@ -28,6 +27,3 @@ protocol AudioSessionProtocol {
 
     func overrideOutputAudioPort(_ portOverride: AVAudioSession.PortOverride) throws
 }
-
-extension AVAudioSession: AudioSessionProtocol {}
-#endif // #if os(macOS) && !targetEnvironment(macCatalyst)
