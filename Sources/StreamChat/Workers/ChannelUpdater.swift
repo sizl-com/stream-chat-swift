@@ -99,10 +99,25 @@ class ChannelUpdater: Worker {
 
     /// Updates specific channel with new data.
     /// - Parameters:
-    ///   - channelPayload: New channel data..
+    ///   - channelPayload: New channel data.
     ///   - completion: Called when the API call is finished. Called with `Error` if the remote update fails.
     func updateChannel(channelPayload: ChannelEditDetailPayload, completion: ((Error?) -> Void)? = nil) {
         apiClient.request(endpoint: .updateChannel(channelPayload: channelPayload)) {
+            completion?($0.error)
+        }
+    }
+
+    /// Updates specific channel with provided data, and removes unneeded properties.
+    /// - Parameters:
+    ///   - updates: Updated channel data. Only non-nil data will be updated.
+    ///   - unsetProperties: Properties from the channel that are going to be cleared/unset.
+    ///   - completion: Called when the API call is finished. Called with `Error` if the remote update fails.
+    func partialChannelUpdate(
+        updates: ChannelEditDetailPayload,
+        unsetProperties: [String],
+        completion: ((Error?) -> Void)? = nil
+    ) {
+        apiClient.request(endpoint: .partialChannelUpdate(updates: updates, unsetProperties: unsetProperties)) {
             completion?($0.error)
         }
     }
@@ -249,6 +264,7 @@ class ChannelUpdater: Worker {
     ///
     /// - Parameters:
     ///   - cid: The cid of the channel the message is create in.
+    ///   - messageId: The id for the sent message.
     ///   - text: Text of the message.
     ///   - pinning: Pins the new message. Nil if should not be pinned.
     ///   - isSilent: A flag indicating whether the message is a silent message. Silent messages are special messages that don't increase the unread messages count nor mark a channel as unread.
@@ -261,6 +277,7 @@ class ChannelUpdater: Worker {
     ///
     func createNewMessage(
         in cid: ChannelId,
+        messageId: MessageId?,
         text: String,
         pinning: MessagePinning? = nil,
         isSilent: Bool,
@@ -278,6 +295,7 @@ class ChannelUpdater: Worker {
         database.write({ (session) in
             let newMessageDTO = try session.createNewMessage(
                 in: cid,
+                messageId: messageId,
                 text: text,
                 pinning: pinning,
                 command: command,

@@ -57,6 +57,7 @@ public extension Appearance {
         public var folder: UIImage = loadImageSafely(with: "folder")
         public var restart: UIImage = loadImageSafely(with: "restart")
         public var emptyChannelListMessageBubble: UIImage = loadImageSafely(with: "empty_channel_list_message_bubble")
+        public var emptySearch: UIImage = loadImageSafely(with: "empty_search")
         public var download: UIImage = loadSafely(systemName: "icloud.and.arrow.down", assetsFallback: "download")
 
         // MARK: - Recording
@@ -195,6 +196,7 @@ public extension Appearance {
 
         // MARK: - Message Actions
 
+        public var messageActionSwipeReply: UIImage = loadImageSafely(with: "icn_inline_reply")
         public var messageActionInlineReply: UIImage = loadImageSafely(with: "icn_inline_reply")
         public var messageActionThreadReply: UIImage = loadImageSafely(with: "icn_thread_reply")
         public var messageActionMarkUnread: UIImage = loadSafely(systemName: "message.badge", assetsFallback: "mark_unread")

@@ -20,6 +20,9 @@ open class ChatThreadVC: _ViewController,
     /// Controller for observing data changes within the parent thread message.
     open var messageController: ChatMessageController!
 
+    /// An optional message id to where the thread should jump to when opening the thread.
+    public var initialReplyId: MessageId?
+
     /// Controller for observing typing events for this thread.
     open lazy var channelEventsController: ChannelEventsController = client.channelEventsController(for: messageController.cid)
 
@@ -81,6 +84,12 @@ open class ChatThreadVC: _ViewController,
         components.threadRendersParentMessageEnabled
     }
 
+    /// A boolean value that determines if replies start from the oldest replies.
+    /// By default it is false, and newest replies are rendered in the first page.
+    open var shouldStartFromOldestReplies: Bool {
+        components.threadRepliesStartFromOldest
+    }
+
     override open func setUp() {
         super.setUp()
 
@@ -99,6 +108,10 @@ open class ChatThreadVC: _ViewController,
         messageController.delegate = self
         channelEventsController.delegate = self
         eventsController.delegate = self
+
+        messageListVC.swipeToReplyGestureHandler.onReply = { [weak self] message in
+            self?.messageComposerVC.content.quoteMessage(message)
+        }
 
         // Handle pagination
         viewPaginationHandler.onNewTopPage = { [weak self] in
@@ -121,7 +134,32 @@ open class ChatThreadVC: _ViewController,
                 messageComposerVC.content.threadMessage = message
             }
 
+            // If there is an initial reply id, we should jump to it
+            if let initialReplyId = self.initialReplyId {
+                self.messageController.loadPageAroundReplyId(initialReplyId) { [weak self] error in
+                    guard error == nil else {
+                        return
+                    }
+
+                    self?.jumpToMessage(id: initialReplyId)
+                }
+                return
+            }
+
+            // When we tap on the parent message and start from oldest replies is enabled
+            if self.shouldStartFromOldestReplies, let parentMessage = self.messageController.message {
+                self.messageController.loadPageAroundReplyId(parentMessage.id) { [weak self] _ in
+                    self?.messageListVC.scrollToTop(animated: false)
+                }
+                return
+            }
+
             self.messageController.loadPreviousReplies()
+        }
+
+        if let message = messageController.message {
+            completeSetUp(message)
+            return
         }
 
         messageController.synchronize { [weak self] _ in
@@ -163,6 +201,26 @@ open class ChatThreadVC: _ViewController,
         resignFirstResponder()
 
         keyboardHandler.stop()
+    }
+
+    /// Jump to a given message.
+    /// In case the message is already loaded, it directly goes to it.
+    /// If not, it will load the messages around it and go to that page.
+    ///
+    /// This function is an high-level abstraction of `messageListVC.jumpToMessage(id:onHighlight:)`.
+    ///
+    /// - Parameters:
+    ///   - id: The id of message which the message list should go to.
+    ///   - shouldHighlight: Whether the message should be highlighted when jumping to it. By default it is highlighted.
+    public func jumpToMessage(id: MessageId, shouldHighlight: Bool = true) {
+        if shouldHighlight {
+            messageListVC.jumpToMessage(id: id) { [weak self] indexPath in
+                self?.messageListVC.highlightCell(at: indexPath)
+            }
+            return
+        }
+
+        messageListVC.jumpToMessage(id: id)
     }
 
     // MARK: - ChatMessageListVCDataSource
